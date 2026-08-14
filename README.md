@@ -18,18 +18,20 @@ licensing rules, so a scenario is written once and runs over either.
 
 ## Version requirement - read this first
 
-| Flow | Transport | Released v0.3.5 package? |
-|---|---|---|
-| [flows/01-embedded-local-ipc](flows/01-embedded-local-ipc/) | local IPC | **No - needs a build newer than v0.3.5** |
-| [flows/02-inject-plain-app](flows/02-inject-plain-app/) | local IPC via `vericue-inject` | **No - needs a build newer than v0.3.5** |
-| [flows/03-tcp-explicit](flows/03-tcp-explicit/) | TCP | **Yes - runs today** |
+All three flows run against **v0.4.0**, the current package on
+<https://dl.vericue.dev>.
+
+| Flow | Transport | v0.4.0 | v0.3.5 |
+|---|---|---|---|
+| [flows/01-embedded-local-ipc](flows/01-embedded-local-ipc/) | local IPC | yes | no |
+| [flows/02-inject-plain-app](flows/02-inject-plain-app/) | local IPC via `vericue-inject` | yes | no |
+| [flows/03-tcp-explicit](flows/03-tcp-explicit/) | TCP | yes | yes |
 
 `VeriCueServer::startLocal()`, the `VERICUE_ENDPOINT=<path>` announcement and
-the local-IPC default of `vericue-inject` are newer than v0.3.5, the current
-package on <https://dl.vericue.dev>. If that is the veriCue you have, run flow 3
-and treat flows 1 and 2 as a preview. Nothing breaks quietly: building against
-v0.3.5 configures `demo_app` as TCP-only and says so, and `--endpoint` then
-tells you which build you need.
+the local-IPC default of `vericue-inject` arrived in v0.4.0. If you are still on
+v0.3.5, run flow 3 and upgrade for the other two. Nothing breaks quietly:
+building against v0.3.5 configures `demo_app` as TCP-only and says so, and
+`--endpoint` then tells you which build you need.
 
 ## Flows
 

@@ -2,7 +2,7 @@
 # Flow 3 - explicit TCP transport, with an ephemeral port and a token.
 #
 # THIS FLOW RUNS WITH THE RELEASED v0.3.5 PACKAGE. It uses no local IPC, so it
-# is the flow to start with until a build newer than v0.3.5 is available.
+# is also the only flow that runs on v0.3.5, which predates local IPC.
 #
 # TCP is the right transport when the client is not on the same machine as the
 # application: another host, a container, a device on the bench - and it is the

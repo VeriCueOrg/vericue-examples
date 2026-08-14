@@ -1,9 +1,9 @@
 # Flow 2 - zero-source-change run with `vericue-inject`
 
-> **Needs a veriCue build newer than v0.3.5.** The local-IPC default of
-> `vericue-inject` and its `VERICUE_ENDPOINT=<path>` announcement are not in the
-> v0.3.5 package on <https://dl.vericue.dev>. With v0.3.5, drive the application
-> over TCP with [flow 3](../03-tcp-explicit/) instead.
+> **Needs veriCue v0.4.0 or newer**, the current package on
+> <https://dl.vericue.dev>. The local-IPC default of `vericue-inject` and its
+> `VERICUE_ENDPOINT=<path>` announcement are not in v0.3.5; on that version drive
+> the application over TCP with [flow 3](../03-tcp-explicit/) instead.
 >
 > **`vericue-inject` is supported on Linux x64, for applications that link Qt
 > dynamically, with a Qt major version matching the package variant you
@@ -70,7 +70,7 @@ proof the synthesized click reached the real widget.
 ## Verified output
 
 Captured on Linux x64, Qt 6.7.1, `QT_QPA_PLATFORM=offscreen`, veriCue built
-from master (post-v0.3.5), trial licensing:
+from the v0.4.0 sources, trial licensing:
 
 ```text
 === The victim links Qt, but nothing from veriCue

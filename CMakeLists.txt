@@ -56,7 +56,7 @@ else()
 endif()
 
 # --- local IPC availability ---------------------------------------------------
-# VeriCueServer::startLocal() (the local IPC transport) is newer than the v0.3.5
+# VeriCueServer::startLocal() (the local IPC transport) arrived in v0.4.0, after
 # package on https://dl.vericue.dev. Detect it in the veriCue headers this build
 # compiles against, so the repository keeps building against v0.3.5 - there
 # demo_app is simply TCP-only and the two local-IPC flows under flows/ are not
@@ -86,7 +86,7 @@ if(VERICUE_HAS_LOCAL_IPC)
     message(STATUS "vericue-examples: local IPC available - demo_app --endpoint enabled")
 else()
     message(STATUS "vericue-examples: this veriCue has no VeriCueServer::startLocal() "
-                   "- demo_app is TCP-only (local IPC needs a build newer than v0.3.5)")
+                   "- demo_app is TCP-only (local IPC needs veriCue v0.4.0 or newer)")
 endif()
 
 add_subdirectory(demo_app)

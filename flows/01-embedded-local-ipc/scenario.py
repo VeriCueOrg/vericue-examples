@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Flow 1 scenario: drive demo_app over the local IPC endpoint it announced.
 
-Requires a veriCue build newer than v0.3.5 (VeriCueClient.connect_local() talks
+Requires veriCue v0.4.0 or newer (VeriCueClient.connect_local() talks
 to VeriCueServer::startLocal(), which the v0.3.5 package does not have).
 
 Run through flows/01-embedded-local-ipc/run.sh, which starts the application and

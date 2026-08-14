@@ -1,9 +1,9 @@
 # Flow 1 - embedded veriCue Runtime on a local IPC endpoint
 
-> **Needs a veriCue build newer than v0.3.5.** `VeriCueServer::startLocal()` is
-> not in the v0.3.5 package on <https://dl.vericue.dev>. Until a newer build is
-> available, run [flow 3](../03-tcp-explicit/) - it does the same things over
-> TCP and works with v0.3.5 today.
+> **Needs veriCue v0.4.0 or newer**, the current package on
+> <https://dl.vericue.dev>. `VeriCueServer::startLocal()` is not in v0.3.5; if
+> you are still on it, run [flow 3](../03-tcp-explicit/) - it does the same
+> things over TCP.
 >
 > **Local IPC is supported on Linux and macOS only.** On Windows use TCP.
 

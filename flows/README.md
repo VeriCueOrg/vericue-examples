@@ -8,18 +8,18 @@ clear message if it does not arrive.
 
 ## Which veriCue build do you need?
 
-| Flow | Transport | Works with the released v0.3.5 package? |
-|---|---|---|
-| [01-embedded-local-ipc](01-embedded-local-ipc/) | local IPC (UNIX socket) | **No - needs a build newer than v0.3.5** |
-| [02-inject-plain-app](02-inject-plain-app/) | local IPC, via `vericue-inject` | **No - needs a build newer than v0.3.5** |
-| [03-tcp-explicit](03-tcp-explicit/) | TCP | **Yes - this one runs today** |
+| Flow | Transport | v0.4.0 (current) | v0.3.5 |
+|---|---|---|---|
+| [01-embedded-local-ipc](01-embedded-local-ipc/) | local IPC (UNIX socket) | yes | no |
+| [02-inject-plain-app](02-inject-plain-app/) | local IPC, via `vericue-inject` | yes | no |
+| [03-tcp-explicit](03-tcp-explicit/) | TCP | yes | yes |
 
 `VeriCueServer::startLocal()`, the `VERICUE_ENDPOINT=<path>` announcement and
-the local-IPC default of `vericue-inject` landed after v0.3.5, the current
-package on <https://dl.vericue.dev>. Flows 1 and 2 need a newer build; flow 3
-works with v0.3.5 as it is. Flow 1 fails at build time in a friendly way: the
-CMake configure step reports `demo_app is TCP-only` and `--endpoint` then tells
-you the same thing instead of misbehaving at runtime.
+the local-IPC default of `vericue-inject` arrived in v0.4.0, the current package
+on <https://dl.vericue.dev>. On v0.3.5 only flow 3 runs. Flow 1 fails at build
+time in a friendly way there: the CMake configure step reports `demo_app is
+TCP-only` and `--endpoint` then tells you the same thing instead of misbehaving
+at runtime.
 
 ## Which transport should I use?
 

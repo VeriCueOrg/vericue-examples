@@ -4,7 +4,7 @@
 plain_app is launched by run.sh through vericue-inject; this script only sees
 the local endpoint the injected veriCue Runtime announced.
 
-Requires a veriCue build newer than v0.3.5 (local IPC).
+Requires veriCue v0.4.0 or newer (local IPC).
 
     python3 scenario.py --endpoint /run/user/1000/vericue/vericue-1234.sock \
                         --screenshot /tmp/plain-app.png

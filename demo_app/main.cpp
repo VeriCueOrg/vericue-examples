@@ -7,8 +7,8 @@
 //   --endpoint [PATH]   local IPC, Linux/macOS only   -> prints VERICUE_ENDPOINT=<path>
 //   --token TOKEN       require TOKEN in the client handshake
 //
-// --endpoint needs a veriCue build NEWER than v0.3.5: VeriCueServer::startLocal()
-// does not exist in the v0.3.5 package, and this file keeps compiling against it
+// --endpoint needs veriCue v0.4.0 or newer: VeriCueServer::startLocal() does not
+// exist in v0.3.5, and this file keeps compiling against it
 // (the CMake check in ../CMakeLists.txt defines VERICUE_EXAMPLES_HAS_LOCAL_IPC
 // only when the veriCue headers being built against expose startLocal()).
 //
@@ -176,7 +176,7 @@ int main(int argc, char *argv[])
                qUtf8Printable(server.localEndpoint()));
 #else
         fprintf(stderr,
-                "vericue-demo-app: --endpoint needs a veriCue build newer than v0.3.5 "
+                "vericue-demo-app: --endpoint needs veriCue v0.4.0 or newer "
                 "(VeriCueServer::startLocal() is missing from the veriCue headers this "
                 "binary was built against). Use --port for the TCP transport.\n");
         return 2;
