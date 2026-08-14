@@ -27,11 +27,15 @@ you the same thing instead of misbehaving at runtime.
   (0600) with no network presence at all - nothing to firewall, nothing to scan.
 - **Anywhere else** (another host, a container, a device on the bench) **and on
   Windows**: TCP with `setAuthToken()`. Local IPC is not supported on Windows.
-- **Evaluating veriCue against an application you do not want to rebuild**:
-  `vericue-inject`, on Linux x64 with dynamically linked Qt. It preloads a probe
-  that starts the veriCue Runtime *inside* the target process; it is an
-  evaluation path, and the production path is embedding `VeriCueServer` (flow 1
-  or flow 3).
+- **Driving an application you do not want to rebuild**: `vericue-inject`, on
+  Linux x64 with a dynamically linked Qt of the same major version as the
+  package. It preloads a probe that starts the veriCue Runtime *inside* the
+  target process - a supported way to acquire the Runtime on those
+  configurations, with the same protocol, authentication and licensing as an
+  embedded server. Embedding `VeriCueServer` (flow 1 or flow 3) is the fallback
+  where injection cannot reach - static Qt, other platforms, setuid/setgid
+  targets, wrapper scripts - and where the Runtime must be compiled out of
+  release builds.
 
 Both transports speak the same protocol and enforce the same authentication and
 licensing rules, so a scenario written against one runs unchanged on the other -
@@ -82,4 +86,7 @@ Useful environment variables (all optional):
   `libvericue-inject.so` in your build or package tree.
 - *`vericue-inject` refuses the target* - it needs Linux x64 and a dynamically
   linked Qt of the same major version as the probe. A statically linked Qt
-  application cannot be injected; embed `VeriCueServer` instead.
+  application cannot be injected (there is no dynamic loader step to preload
+  into), and neither can a set-user-ID / set-group-ID binary or a wrapper
+  script. Every one of these is refused before launch with the reason; embed
+  `VeriCueServer` instead.

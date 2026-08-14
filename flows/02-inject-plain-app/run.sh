@@ -1,15 +1,20 @@
 #!/bin/sh
-# Flow 2 - zero-build-change evaluation: drive plain_app through vericue-inject.
+# Flow 2 - zero-source-change run: drive plain_app through vericue-inject.
 #
 # REQUIRES A veriCue BUILD NEWER THAN v0.3.5. The local-IPC default of
 # vericue-inject and its VERICUE_ENDPOINT announcement are not in the v0.3.5
 # package on https://dl.vericue.dev. With v0.3.5 use flows/03-tcp-explicit,
 # which runs today.
 #
-# vericue-inject is an EVALUATION tool for Linux x64 applications that link Qt
-# dynamically. It preloads a probe that starts the veriCue Runtime inside the
-# target process - veriCue code runs in the application, it is not an external
-# observer. For a permanent test setup embed VeriCueServer (see flow 1).
+# vericue-inject is a supported way to acquire the Runtime on Linux x64, for
+# targets that link Qt dynamically with a Qt major version matching the package
+# variant - same server, same command surface, same authentication, same
+# licensing as embedding. It preloads a probe that starts the veriCue Runtime
+# inside the target process: veriCue code runs in the application, this is not
+# an external observer and not a serverless mechanism. Static Qt, other
+# platforms, setuid/setgid targets and wrapper scripts are refused before launch
+# by the preflight; embed VeriCueServer there (see flow 1), and wherever the
+# Runtime must be compiled out of release builds.
 #
 # plain_app is the victim on purpose: it has no veriCue include, no veriCue
 # link, no veriCue code path. Nothing about it changes for this flow.

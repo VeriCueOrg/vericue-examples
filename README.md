@@ -46,11 +46,18 @@ flows/03-tcp-explicit/run.sh         # explicit TCP: ephemeral port + auth token
 See [flows/README.md](flows/README.md) for prerequisites, environment variables
 and troubleshooting.
 
-`vericue-inject` (flow 2) is a **zero-build-change evaluation** path for
-**Linux x64 applications with dynamically linked Qt**. It preloads a probe that
-starts the veriCue Runtime *inside* the target process - the same runtime flow 1
-embeds explicitly, loaded a different way. For a test suite you keep, embed
-`VeriCueServer`.
+`vericue-inject` (flow 2) is a **zero-build-change** way to acquire the Runtime:
+it preloads a probe that starts the veriCue Runtime *inside* the target process -
+the same runtime flow 1 embeds explicitly, loaded a different way. On its
+documented configurations - **Linux x64, dynamically linked Qt, Qt major version
+matching the package variant** - this is a **supported** path, not a demo: the
+same server, the same command surface, the same authentication and the same
+licensing you get from embedding. Everything else - a statically linked Qt, other
+platforms, setuid/setgid targets, wrapper scripts - is refused before launch by
+the launcher's preflight, with the reason; embed `VeriCueServer` there, and in
+any build where you want the Runtime compiled out of release binaries. Injection
+is **not** a serverless mechanism: veriCue code runs inside your process either
+way, injection only changes how it gets there.
 
 ## Example applications
 

@@ -1,13 +1,17 @@
-# Flow 2 - zero-build-change evaluation with `vericue-inject`
+# Flow 2 - zero-source-change run with `vericue-inject`
 
 > **Needs a veriCue build newer than v0.3.5.** The local-IPC default of
 > `vericue-inject` and its `VERICUE_ENDPOINT=<path>` announcement are not in the
-> v0.3.5 package on <https://dl.vericue.dev>. With v0.3.5, evaluate over TCP
-> with [flow 3](../03-tcp-explicit/) instead.
+> v0.3.5 package on <https://dl.vericue.dev>. With v0.3.5, drive the application
+> over TCP with [flow 3](../03-tcp-explicit/) instead.
 >
-> **`vericue-inject` is an evaluation tool for Linux x64 applications that link
-> Qt dynamically.** It is not a production deployment model, it is not
-> available on macOS or Windows, and it cannot drive a statically linked Qt.
+> **`vericue-inject` is supported on Linux x64, for applications that link Qt
+> dynamically, with a Qt major version matching the package variant you
+> downloaded.** On those configurations it is a supported way to acquire the
+> Runtime, with the same server, the same command surface, the same
+> authentication and the same licensing as embedding. It is not available on
+> macOS or Windows, and it cannot drive a statically linked Qt - see
+> [Compatibility](#compatibility).
 
 ## What actually happens
 
@@ -19,7 +23,8 @@ endpoint it is listening on.
 
 So veriCue code runs in the target process - the same code that flow 1 embeds
 explicitly, just loaded a different way. Nothing observes the application from
-the outside.
+the outside: injection is not a serverless mechanism, it only changes how the
+Runtime gets into the process.
 
 The victim is the existing `plain_app`: it has no veriCue include, no veriCue
 link and no veriCue code path, and this flow does not change that.
@@ -114,9 +119,27 @@ Endpoint removed: /run/user/1000/vericue/vericue-552000.sock
 Screenshot of the un-instrumented application: /tmp/vericue-flow-02-plain-app.png
 ```
 
-## When to stop injecting
+## Compatibility
 
-Injection is for the first hour: point it at an application nobody wants to
-rebuild and see whether veriCue can drive it. For a test suite you keep, embed
-`VeriCueServer` as in flow 1 (local IPC) or flow 3 (TCP) - explicit start-up,
-explicit transport, explicit token, and no dependency on `LD_PRELOAD`.
+`vericue-inject` is supported on:
+
+- **Linux x64** - it ships in the Linux packages, and x86-64 is the only
+  architecture a Linux package is built, tested and distributed for.
+- targets that link Qt **dynamically** (`libQt5Core.so` / `libQt6Core.so`).
+- a target **Qt major version matching the package variant** you downloaded (a
+  Qt 6 probe will not attach to a Qt 5 application).
+
+Everything else is **refused before launch** by the launcher's preflight, with
+the reason and a corrective action, rather than failing inside your application:
+a statically linked Qt (there is no dynamic loader step to preload into),
+platforms other than Linux x64, set-user-ID / set-group-ID binaries (the loader
+drops `LD_PRELOAD` for them), and wrapper scripts (nothing about the binary they
+eventually exec can be checked from the script). Run
+`vericue-inject --check -- ./your-qt-app` to get the whole preflight report
+without starting anything.
+
+Embedding `VeriCueServer` - flow 1 (local IPC) or flow 3 (TCP) - is the fallback
+in all of those cases, and the setup to pick when you want the Runtime compiled
+out of release builds, or an explicit start-up with no dependency on
+`LD_PRELOAD`. Both are supported; pick per situation. The full matrix is in
+[Zero-source-change runs](https://vericue.dev/docs/guides/injector).
