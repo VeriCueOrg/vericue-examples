@@ -47,8 +47,8 @@ fi
 
 for transport in ${VERICUE_TRANSPORTS:-local tcp}; do
     case $transport in
-    local) filter=LocalEndpointTest.* ;;
-    tcp)   filter=DemoScenarioTest.* ;;
+    local) filter='LocalEndpointTest.*' ;;
+    tcp)   filter='DemoScenarioTest.*' ;;
     *)     flow_die "unknown transport '$transport' - use 'local' or 'tcp'" ;;
     esac
 

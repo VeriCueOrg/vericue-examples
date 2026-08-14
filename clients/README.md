@@ -127,7 +127,11 @@ demo_app-python.png   the screenshot captured by step 4
 
 They are written whether the run passed or failed - a failing run is exactly
 when they matter - and the script exits with pytest's status.
+
 [`.github/workflows/client-scenarios.yml`](../.github/workflows/client-scenarios.yml)
-does the same thing on `ubuntu-latest` and uploads that directory as a build
-artifact. It needs no secrets: the SDK tarball, the PyPI client and Ubuntu's
-Qt 5.15 packages are all public, and the Runtime uses its built-in trial.
+does the same on `ubuntu-latest` and uploads that directory as a build
+artifact, but it is **manual (`workflow_dispatch`), not run on every public
+PR**: `dl.vericue.dev` sits behind a Cloudflare managed challenge and answers
+`403` (`cf-mitigated: challenge`) to GitHub-hosted runners, so the SDK cannot
+be downloaded there. See [`ci/README.md`](ci/) for the measurement and the
+ways around it. The flow itself needs no secrets and no licence file.

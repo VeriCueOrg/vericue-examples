@@ -1,24 +1,41 @@
 name: client scenarios
 
 # Builds the example applications and runs the CI/reporting flow
-# (clients/ci/run.sh) against a public veriCue release, then uploads the
-# JUnit XML, the veriCue HTML report and the screenshot the scenario captures.
+# (clients/ci/run.sh) against a public veriCue release, then uploads the JUnit
+# XML, the veriCue HTML report and the screenshot the scenario captures.
 #
-# Everything this job needs is public: the SDK tarball on dl.vericue.dev, the
-# `vericue` client on PyPI and Ubuntu's own Qt 5.15 packages. No secrets, no
-# licence file - the veriCue Runtime falls back to its built-in 30-day trial,
-# and a fresh runner starts a fresh one. That is why this runs on pull
-# requests from forks as well.
+# WHY THIS IS MANUAL (workflow_dispatch) AND NOT RUN ON EVERY PULL REQUEST
 #
-# What it does NOT prove: Windows, macOS, Qt 6, a real display server, or any
-# Qt rendering stack other than the one in this image. It is one runner, and
-# it is offscreen. See clients/README.md.
+# The job needs the veriCue package, and dl.vericue.dev sits behind a
+# Cloudflare managed challenge. GitHub-hosted runners are challenged, so every
+# download from one answers:
+#
+#   HTTP/2 403 ... cf-mitigated: challenge
+#
+# for the SDK tarballs and for install.sh alike (measured on ubuntu-latest,
+# 2026-08-14). Nothing in this repository can work around that, and a workflow
+# that fails on every public PR for a reason unrelated to the change under
+# review is worse than no workflow. Everything else this job needs is public
+# and was verified on ubuntu-latest (Ubuntu 24.04, qtbase5-dev 5.15.13,
+# `pip install vericue==0.4.0`), and the flow itself needs no secrets and no
+# licence file - the veriCue Runtime falls back to its built-in 30-day trial.
+#
+# So run it where the download works:
+#   * a self-hosted runner, or any runner allowed through the challenge;
+#   * or with sdk_url pointing at your own mirror of the release tarball;
+#   * or locally - clients/ci/run.sh is the whole flow and needs no CI at all.
+#
+# What this job would NOT prove even where it runs: Windows, macOS, Qt 6, a
+# real display server, or any Qt rendering stack other than the one in this
+# image. It is one runner, and it is offscreen. See clients/README.md.
 
 on:
-  push:
-    branches: [master]
-  pull_request:
   workflow_dispatch:
+    inputs:
+      sdk_url:
+        description: veriCue SDK tarball (Qt 5.15, Linux x64)
+        required: false
+        default: https://dl.vericue.dev/v0.4.0/vericue-0.4.0-qt5.15-linux-x64.tar.gz
 
 permissions:
   contents: read
@@ -36,10 +53,18 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             qtbase5-dev qtbase5-dev-tools libgl1-mesa-dev
 
-      - name: Download the veriCue SDK (public release)
+      - name: Download the veriCue SDK
+        env:
+          SDK_URL: ${{ inputs.sdk_url }}
         run: |
-          curl -fsSL -o vericue.tar.gz \
-            https://dl.vericue.dev/v0.4.0/vericue-0.4.0-qt5.15-linux-x64.tar.gz
+          if ! curl -fsSL -o vericue.tar.gz "$SDK_URL"; then
+            echo "::error::Could not download $SDK_URL."
+            echo "::error::dl.vericue.dev answers 403 (Cloudflare challenge) to"
+            echo "::error::GitHub-hosted runners - see the comment at the top of"
+            echo "::error::this workflow. Use a runner that can reach it, or pass"
+            echo "::error::sdk_url pointing at your own mirror."
+            exit 1
+          fi
           mkdir -p "$HOME/vericue"
           tar xzf vericue.tar.gz -C "$HOME/vericue" --strip-components=1
 
