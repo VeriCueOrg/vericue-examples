@@ -55,6 +55,40 @@ else()
     set(VERICUE_SERVER_TARGET vericue::vericue-server)
 endif()
 
+# --- local IPC availability ---------------------------------------------------
+# VeriCueServer::startLocal() (the local IPC transport) is newer than the v0.3.5
+# package on https://dl.vericue.dev. Detect it in the veriCue headers this build
+# compiles against, so the repository keeps building against v0.3.5 - there
+# demo_app is simply TCP-only and the two local-IPC flows under flows/ are not
+# runnable.
+set(VERICUE_HAS_LOCAL_IPC OFF)
+get_target_property(_vericue_includes ${VERICUE_SERVER_TARGET} INTERFACE_INCLUDE_DIRECTORIES)
+if(_vericue_includes)
+    foreach(_dir IN LISTS _vericue_includes)
+        # In-tree the property holds generator expressions; unwrap the build
+        # one and skip anything else that is still a generator expression.
+        if(_dir MATCHES "^\\$<BUILD_INTERFACE:(.+)>$")
+            set(_dir "${CMAKE_MATCH_1}")
+        elseif(_dir MATCHES "^\\$<")
+            continue()
+        endif()
+        if(EXISTS "${_dir}/vericue/server.h")
+            file(STRINGS "${_dir}/vericue/server.h" _vericue_start_local REGEX "startLocal")
+            if(_vericue_start_local)
+                set(VERICUE_HAS_LOCAL_IPC ON)
+            endif()
+        endif()
+    endforeach()
+endif()
+unset(_vericue_includes)
+
+if(VERICUE_HAS_LOCAL_IPC)
+    message(STATUS "vericue-examples: local IPC available - demo_app --endpoint enabled")
+else()
+    message(STATUS "vericue-examples: this veriCue has no VeriCueServer::startLocal() "
+                   "- demo_app is TCP-only (local IPC needs a build newer than v0.3.5)")
+endif()
+
 add_subdirectory(demo_app)
 add_subdirectory(test_app)
 add_subdirectory(qml_app)
