@@ -61,6 +61,27 @@ any build where you want the Runtime compiled out of release binaries. Injection
 is **not** a serverless mechanism: veriCue code runs inside your process either
 way, injection only changes how it gets there.
 
+## Client scenarios - the same test from every SDK
+
+[`clients/`](clients/) takes over where a flow ends: an endpoint exists, now
+drive the UI from a real test runner. One small scenario against `demo_app` -
+address an object, type into it, click a checkbox, assert the state changed,
+capture a screenshot - written once per shipped SDK, plus the CI flow that
+turns it into report artifacts.
+
+```bash
+clients/python/run.sh    # pytest         (clients/python/test_demo_scenario.py)
+clients/cpp/run.sh       # GoogleTest     (clients/cpp/demo_scenario_test.cpp)
+clients/csharp/run.sh    # xUnit          (clients/csharp/DemoScenarioTests.cs)
+clients/ci/run.sh        # JUnit XML + the veriCue HTML report + the screenshot
+```
+
+Each of the three runs over **both** transports: the script starts `demo_app`
+once with `--endpoint` and once with `--port 0 --token <random>`, and the
+scenario picks up `VERICUE_ENDPOINT` or `VERICUE_HOST`/`VERICUE_PORT`/
+`VERICUE_TOKEN` from the environment. See [clients/README.md](clients/README.md)
+for the step-by-step comparison, prerequisites and the artifact layout.
+
 ## Example applications
 
 Every app except `plain_app` embeds the veriCue Runtime and demonstrates one

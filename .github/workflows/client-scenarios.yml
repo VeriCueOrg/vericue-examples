@@ -1,0 +1,70 @@
+name: client scenarios
+
+# Builds the example applications and runs the CI/reporting flow
+# (clients/ci/run.sh) against a public veriCue release, then uploads the
+# JUnit XML, the veriCue HTML report and the screenshot the scenario captures.
+#
+# Everything this job needs is public: the SDK tarball on dl.vericue.dev, the
+# `vericue` client on PyPI and Ubuntu's own Qt 5.15 packages. No secrets, no
+# licence file - the veriCue Runtime falls back to its built-in 30-day trial,
+# and a fresh runner starts a fresh one. That is why this runs on pull
+# requests from forks as well.
+#
+# What it does NOT prove: Windows, macOS, Qt 6, a real display server, or any
+# Qt rendering stack other than the one in this image. It is one runner, and
+# it is offscreen. See clients/README.md.
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ci-reporting-flow:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Ubuntu ships Qt 5.15, which the qt5.15 veriCue build below runs on.
+      - name: Install Qt 5.15
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            qtbase5-dev qtbase5-dev-tools libgl1-mesa-dev
+
+      - name: Download the veriCue SDK (public release)
+        run: |
+          curl -fsSL -o vericue.tar.gz \
+            https://dl.vericue.dev/v0.4.0/vericue-0.4.0-qt5.15-linux-x64.tar.gz
+          mkdir -p "$HOME/vericue"
+          tar xzf vericue.tar.gz -C "$HOME/vericue" --strip-components=1
+
+      - name: Build the example applications
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=Release \
+                -DCMAKE_PREFIX_PATH="$HOME/vericue"
+          cmake --build build --parallel
+
+      - name: Install the veriCue Python client
+        run: python3 -m pip install --upgrade "vericue==0.4.0" pytest pytest-asyncio
+
+      - name: Run the CI/reporting flow
+        env:
+          # The runner has no display; the flow scripts fall back to
+          # QT_QPA_PLATFORM=offscreen on their own, but be explicit here.
+          QT_QPA_PLATFORM: offscreen
+          LD_LIBRARY_PATH: /home/runner/vericue/lib
+          VERICUE_ARTIFACT_DIR: ${{ github.workspace }}/ci-artifacts
+        run: clients/ci/run.sh
+
+      - name: Upload the reports and screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vericue-reports
+          path: ci-artifacts/
+          if-no-files-found: error
