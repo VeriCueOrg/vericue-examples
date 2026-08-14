@@ -1,2 +1,6 @@
 build/
 build-*/
+
+# Python bytecode - never belongs in a public examples repo.
+__pycache__/
+*.py[cod]

@@ -1,7 +1,7 @@
 # Flow 3 - explicit TCP, ephemeral port, authenticated
 
-> **This flow runs with the released v0.3.5 package.** It uses no local IPC, so
-> it is the flow to start with until a newer veriCue build is available.
+> **Runs on every released version.** It uses no local IPC, so it is also the
+> only flow available on the legacy v0.3.5 package.
 
 TCP has not been replaced by local IPC - it is the transport for every case
 where the client is not on the same machine as the application:

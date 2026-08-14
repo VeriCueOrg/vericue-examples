@@ -1,10 +1,10 @@
 #!/bin/sh
 # Flow 2 - zero-source-change run: drive plain_app through vericue-inject.
 #
-# REQUIRES A veriCue BUILD NEWER THAN v0.3.5. The local-IPC default of
-# vericue-inject and its VERICUE_ENDPOINT announcement are not in the v0.3.5
-# package on https://dl.vericue.dev. With v0.3.5 use flows/03-tcp-explicit,
-# which runs today.
+# REQUIRES veriCue v0.4.0 OR NEWER, the current package on
+# https://dl.vericue.dev. The local-IPC default of vericue-inject and its
+# VERICUE_ENDPOINT announcement are not in v0.3.5; on that legacy version use
+# flows/03-tcp-explicit instead.
 #
 # vericue-inject is a supported way to acquire the Runtime on Linux x64, for
 # targets that link Qt dynamically with a Qt major version matching the package

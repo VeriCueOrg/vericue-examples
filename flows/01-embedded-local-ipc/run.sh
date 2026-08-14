@@ -1,10 +1,10 @@
 #!/bin/sh
 # Flow 1 - embedded veriCue Runtime on a local IPC endpoint.
 #
-# REQUIRES A veriCue BUILD NEWER THAN v0.3.5. VeriCueServer::startLocal() and
-# the VERICUE_ENDPOINT announcement are not part of the v0.3.5 package on
-# https://dl.vericue.dev. With v0.3.5 use flows/03-tcp-explicit instead - that
-# one runs today.
+# REQUIRES veriCue v0.4.0 OR NEWER, the current package on
+# https://dl.vericue.dev. VeriCueServer::startLocal() and the VERICUE_ENDPOINT
+# announcement are not in v0.3.5; on that legacy version use
+# flows/03-tcp-explicit instead.
 #
 # Local IPC is supported on Linux and macOS. On Windows use the TCP flow.
 #
