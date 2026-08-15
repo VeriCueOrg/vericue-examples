@@ -1,0 +1,95 @@
+name: client scenarios
+
+# Builds the example applications and runs the CI/reporting flow
+# (clients/ci/run.sh) against a public veriCue release, then uploads the JUnit
+# XML, the veriCue HTML report and the screenshot the scenario captures.
+#
+# WHY THIS IS MANUAL (workflow_dispatch) AND NOT RUN ON EVERY PULL REQUEST
+#
+# The job needs the veriCue package, and dl.vericue.dev sits behind a
+# Cloudflare managed challenge. GitHub-hosted runners are challenged, so every
+# download from one answers:
+#
+#   HTTP/2 403 ... cf-mitigated: challenge
+#
+# for the SDK tarballs and for install.sh alike (measured on ubuntu-latest,
+# 2026-08-14). Nothing in this repository can work around that, and a workflow
+# that fails on every public PR for a reason unrelated to the change under
+# review is worse than no workflow. Everything else this job needs is public
+# and was verified on ubuntu-latest (Ubuntu 24.04, qtbase5-dev 5.15.13,
+# `pip install vericue==0.4.0`), and the flow itself needs no secrets and no
+# licence file - the veriCue Runtime falls back to its built-in 30-day trial.
+#
+# So run it where the download works:
+#   * a self-hosted runner, or any runner allowed through the challenge;
+#   * or with sdk_url pointing at your own mirror of the release tarball;
+#   * or locally - clients/ci/run.sh is the whole flow and needs no CI at all.
+#
+# What this job would NOT prove even where it runs: Windows, macOS, Qt 6, a
+# real display server, or any Qt rendering stack other than the one in this
+# image. It is one runner, and it is offscreen. See clients/README.md.
+
+on:
+  workflow_dispatch:
+    inputs:
+      sdk_url:
+        description: veriCue SDK tarball (Qt 5.15, Linux x64)
+        required: false
+        default: https://dl.vericue.dev/v0.4.0/vericue-0.4.0-qt5.15-linux-x64.tar.gz
+
+permissions:
+  contents: read
+
+jobs:
+  ci-reporting-flow:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Ubuntu ships Qt 5.15, which the qt5.15 veriCue build below runs on.
+      - name: Install Qt 5.15
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            qtbase5-dev qtbase5-dev-tools libgl1-mesa-dev
+
+      - name: Download the veriCue SDK
+        env:
+          SDK_URL: ${{ inputs.sdk_url }}
+        run: |
+          if ! curl -fsSL -o vericue.tar.gz "$SDK_URL"; then
+            echo "::error::Could not download $SDK_URL."
+            echo "::error::dl.vericue.dev answers 403 (Cloudflare challenge) to"
+            echo "::error::GitHub-hosted runners - see the comment at the top of"
+            echo "::error::this workflow. Use a runner that can reach it, or pass"
+            echo "::error::sdk_url pointing at your own mirror."
+            exit 1
+          fi
+          mkdir -p "$HOME/vericue"
+          tar xzf vericue.tar.gz -C "$HOME/vericue" --strip-components=1
+
+      - name: Build the example applications
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=Release \
+                -DCMAKE_PREFIX_PATH="$HOME/vericue"
+          cmake --build build --parallel
+
+      - name: Install the veriCue Python client
+        run: python3 -m pip install --upgrade "vericue==0.4.0" pytest pytest-asyncio
+
+      - name: Run the CI/reporting flow
+        env:
+          # The runner has no display; the flow scripts fall back to
+          # QT_QPA_PLATFORM=offscreen on their own, but be explicit here.
+          QT_QPA_PLATFORM: offscreen
+          LD_LIBRARY_PATH: /home/runner/vericue/lib
+          VERICUE_ARTIFACT_DIR: ${{ github.workspace }}/ci-artifacts
+        run: clients/ci/run.sh
+
+      - name: Upload the reports and screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vericue-reports
+          path: ci-artifacts/
+          if-no-files-found: error

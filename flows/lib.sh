@@ -131,3 +131,56 @@ flow_random_token() {
     FLOW_TOKEN=$(od -An -tx1 -N16 /dev/urandom 2>/dev/null | tr -d ' \n')
     [ -n "$FLOW_TOKEN" ] || flow_die "could not generate a random token from /dev/urandom"
 }
+
+# flow_start_demo_app TRANSPORT LOGFILE
+# Starts demo_app on TRANSPORT ("local" or "tcp"), waits for its announcement
+# and exports the environment the client scenarios under clients/ read:
+#
+#   local -> VERICUE_ENDPOINT=<socket path>
+#   tcp   -> VERICUE_HOST, VERICUE_PORT, VERICUE_TOKEN (fresh token per run)
+#
+# Only one of the two sets is exported, so a scenario always knows which
+# transport it was asked for. Sets FLOW_APP_PID; the caller kills it (see
+# flow_stop_app) from its own trap.
+flow_start_demo_app() {
+    _transport=$1
+    _applog=$2
+
+    flow_find_binary "the demo app (vericue-demo-app)" "${VERICUE_DEMO_APP:-}" demo_app/vericue-demo-app
+    unset VERICUE_ENDPOINT VERICUE_HOST VERICUE_PORT VERICUE_TOKEN
+
+    case $_transport in
+    local)
+        "$FLOW_BINARY" --endpoint >"$_applog" 2>&1 &
+        FLOW_APP_PID=$!
+        flow_wait_for VERICUE_ENDPOINT "$_applog" "$FLOW_APP_PID" 20
+        VERICUE_ENDPOINT=$FLOW_VALUE
+        export VERICUE_ENDPOINT
+        printf 'demo_app on local IPC: VERICUE_ENDPOINT=%s\n' "$VERICUE_ENDPOINT"
+        ;;
+    tcp)
+        flow_random_token
+        "$FLOW_BINARY" --port 0 --token "$FLOW_TOKEN" >"$_applog" 2>&1 &
+        FLOW_APP_PID=$!
+        flow_wait_for VERICUE_PORT "$_applog" "$FLOW_APP_PID" 20
+        VERICUE_HOST=127.0.0.1
+        VERICUE_PORT=$FLOW_VALUE
+        VERICUE_TOKEN=$FLOW_TOKEN
+        export VERICUE_HOST VERICUE_PORT VERICUE_TOKEN
+        printf 'demo_app on TCP: VERICUE_PORT=%s (token generated for this run)\n' "$VERICUE_PORT"
+        ;;
+    *)
+        flow_die "unknown transport '$_transport' - use 'local' or 'tcp'"
+        ;;
+    esac
+}
+
+# flow_stop_app PID - terminate a process started by flow_start_demo_app.
+flow_stop_app() {
+    _pid=$1
+    [ -n "$_pid" ] || return 0
+    kill -0 "$_pid" 2>/dev/null || return 0
+    kill "$_pid" 2>/dev/null || true
+    flow_wait_for_exit "$_pid" 5 || kill -9 "$_pid" 2>/dev/null || true
+    wait "$_pid" 2>/dev/null || true
+}

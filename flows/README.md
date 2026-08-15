@@ -6,6 +6,11 @@ drives the real UI. No fixed ports, no fixed socket paths, no sleeping: every
 script reads the announcement the application prints on stdout and fails with a
 clear message if it does not arrive.
 
+These flows answer *how the Runtime is started and reached*. Once an endpoint
+exists, [`clients/`](../clients/) shows what a real test suite does with it -
+the same scenario in pytest, GoogleTest and xUnit, plus a CI flow that produces
+JUnit XML and the veriCue HTML report.
+
 ## Which veriCue build do you need?
 
 | Flow | Transport | v0.4.0 (current) | v0.3.5 |

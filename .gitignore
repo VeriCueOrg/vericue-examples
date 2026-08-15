@@ -4,3 +4,15 @@ build-*/
 # Python bytecode - never belongs in a public examples repo.
 __pycache__/
 *.py[cod]
+.pytest_cache/
+
+# .NET build output (clients/csharp).
+bin/
+obj/
+
+# Screenshots and reports produced by the client scenarios and the CI flow.
+clients/*/artifacts/
+ci-artifacts/
+# ... and the veriCue pytest plugin's defaults, if pytest is run by hand.
+vericue_report.html
+vericue_report.xml
