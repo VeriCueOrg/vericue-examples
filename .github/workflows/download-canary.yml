@@ -1,0 +1,161 @@
+name: download canary
+
+# Proves that a GitHub-hosted runner can still download the public veriCue
+# artifacts a customer needs to put veriCue into their own CI.
+#
+# WHY THIS EXISTS
+#
+# VeriCueOrg/vericue#33: dl.vericue.dev answers 403 (cf-mitigated: challenge)
+# to GitHub-hosted runners while the same requests succeed from an ordinary
+# machine. Nobody noticed for weeks, because nothing we run downloads from the
+# environment the customer downloads from - our release verification proves an
+# artifact was uploaded, not that it can still be fetched from a datacentre IP.
+# A trial user wiring veriCue into GitHub Actions would have found it for us.
+#
+# So this job is deliberately dumb and deliberately public: no secrets, no
+# licence, no build. It walks the same documented path install.sh walks -
+# resolve /latest, then fetch /v<version>/<package> - from ubuntu-latest, and
+# goes red when a customer would be blocked.
+#
+# It stays useful after #33 is fixed: it guards the whole class of silent
+# download regressions (a re-enabled Bot Fight Mode, a WAF rule edit, an R2
+# binding change, a broken /latest marker), not that one incident.
+
+on:
+  schedule:
+    # Daily, off the hour: this is availability monitoring, not a build.
+    - cron: '17 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  canary:
+    name: public download path (GitHub-hosted runner)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Download the public artifacts a customer CI needs
+        shell: bash
+        run: |
+          set -uo pipefail          # NOT -e: every check runs, then we report
+          CDN="https://dl.vericue.dev"
+          QT="6.7"
+          failures=0
+
+          # HTTP status alone is not proof. A challenge, an error page or a
+          # redirect to one can arrive as 200 and as text/html, so each check
+          # below also asserts what the payload actually IS.
+          note_failure() {
+            failures=$((failures + 1))
+            echo "::error title=veriCue download canary::$1"
+          }
+
+          # fetch <url> <output> -> sets HTTP_STATUS; non-zero return on failure
+          fetch() {
+            HTTP_STATUS="$(curl -sS -L --max-time 120 \
+                             -w '%{http_code}' -o "$2" "$1" 2>curl.err)" || {
+              echo "  curl failed: $(cat curl.err)"
+              HTTP_STATUS="000"
+              return 1
+            }
+            [ "$HTTP_STATUS" = "200" ]
+          }
+
+          looks_like_challenge() {
+            # Match HTML structure and interstitial titles only. NOT the bare
+            # word "cloudflare": the real install.sh says in its own header
+            # comment that it downloads from the Cloudflare R2 CDN, so grepping
+            # for the vendor name flags the genuine installer as a challenge
+            # page. (It did, the first time this ran.)
+            head -c 4096 "$1" | grep -qiE '<html|<!doctype html|cf-browser-verification|Just a moment|Attention Required'
+          }
+
+          echo "::group::/latest version marker"
+          LATEST_URL="${CDN}/latest"
+          VERSION=""
+          if fetch "$LATEST_URL" latest.txt; then
+            VERSION="$(tr -d ' \t\r\n' < latest.txt)"
+            # The marker is a bare version string. Anything else - an HTML page,
+            # an error blob - means we resolved a page, not a release.
+            if printf '%s' "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+              echo "latest = ${VERSION}"
+            else
+              note_failure "${LATEST_URL} returned HTTP ${HTTP_STATUS} but the body is not a version string (first 200 bytes: $(head -c 200 latest.txt | tr -d '\n'))"
+              VERSION=""
+            fi
+          else
+            note_failure "${LATEST_URL} failed with HTTP ${HTTP_STATUS} - this is the first request install.sh makes"
+          fi
+          echo "::endgroup::"
+
+          echo "::group::install.sh"
+          INSTALL_URL="${CDN}/install.sh"
+          if fetch "$INSTALL_URL" install.sh; then
+            if looks_like_challenge install.sh; then
+              note_failure "${INSTALL_URL} returned HTTP 200 but served an HTML challenge/error page instead of the installer"
+            elif ! head -c 2 install.sh | grep -q '#!'; then
+              note_failure "${INSTALL_URL} returned HTTP 200 but the body does not start with a shebang - it is not the installer"
+            else
+              echo "install.sh OK ($(wc -c < install.sh) bytes)"
+            fi
+          else
+            note_failure "${INSTALL_URL} failed with HTTP ${HTTP_STATUS} - the documented 'curl | bash' onboarding path is broken from GitHub Actions"
+          fi
+          echo "::endgroup::"
+
+          # The Runtime tarball is resolved through /latest rather than pinned,
+          # so this keeps testing the current release without edits here. If
+          # /latest is what broke, there is nothing to resolve and the failure
+          # above is already the report.
+          if [ -n "$VERSION" ]; then
+            echo "::group::Runtime tarball ${VERSION} (Qt ${QT}, linux-x64)"
+            PKG="vericue-${VERSION}-qt${QT}-linux-x64.tar.gz"
+            PKG_URL="${CDN}/v${VERSION}/${PKG}"
+            if fetch "$PKG_URL" "$PKG"; then
+              if looks_like_challenge "$PKG"; then
+                note_failure "${PKG_URL} returned HTTP 200 but served an HTML page instead of the package"
+              elif ! gzip -t "$PKG" 2>/dev/null; then
+                note_failure "${PKG_URL} returned HTTP 200 but the payload is not a valid gzip archive"
+              else
+                echo "${PKG} OK ($(wc -c < "$PKG") bytes)"
+                # The published checksum is the strongest content proof we have
+                # and it is the step install.sh performs, so exercise it too.
+                if fetch "${PKG_URL}.sha256" "${PKG}.sha256"; then
+                  expected="$(cut -d' ' -f1 < "${PKG}.sha256")"
+                  actual="$(sha256sum "$PKG" | cut -d' ' -f1)"
+                  if [ "$expected" = "$actual" ]; then
+                    echo "sha256 OK (${actual})"
+                  else
+                    note_failure "${PKG_URL} checksum mismatch: published ${expected}, downloaded ${actual}"
+                  fi
+                else
+                  note_failure "${PKG_URL}.sha256 failed with HTTP ${HTTP_STATUS} - install.sh verifies this file"
+                fi
+              fi
+            else
+              note_failure "${PKG_URL} failed with HTTP ${HTTP_STATUS} - customers cannot install the Runtime from GitHub Actions"
+            fi
+            echo "::endgroup::"
+          fi
+
+          echo
+          if [ "$failures" -ne 0 ]; then
+            cat >&2 <<'EOF'
+          =====================================================================
+          The public veriCue download path is broken from a GitHub-hosted
+          runner. This is what a customer wiring veriCue into GitHub Actions
+          sees right now, and it usually looks to them like our CDN is down.
+
+          This is download infrastructure, not this repository: no change here
+          can fix it and no change here caused it. Check the Cloudflare WAF /
+          bot-mitigation configuration on the dl.vericue.dev hostname first.
+
+          Background and the exact reproduction: VeriCueOrg/vericue#33
+          =====================================================================
+          EOF
+            exit 1
+          fi
+          echo "All public download checks passed from ubuntu-latest."
