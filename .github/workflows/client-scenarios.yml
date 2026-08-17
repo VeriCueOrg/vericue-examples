@@ -53,9 +53,24 @@ jobs:
       - name: Download the veriCue SDK
         env:
           # inputs.sdk_url exists only on workflow_dispatch; on push and
-          # pull_request it is empty, so the default belongs here as well.
-          SDK_URL: ${{ inputs.sdk_url || 'https://dl.vericue.dev/v0.4.0/vericue-0.4.0-qt5.15-linux-x64.tar.gz' }}
+          # pull_request it is empty and the current release is resolved below.
+          SDK_URL: ${{ inputs.sdk_url }}
         run: |
+          # Resolve the current release rather than pinning one. A hardcoded
+          # version silently keeps testing an old package after a release - this
+          # job went on downloading v0.4.0 the day v0.5.0 shipped, and failed on
+          # a defect that release had already fixed. /latest is the same marker
+          # install.sh reads, so this follows whatever customers actually get.
+          if [ -z "$SDK_URL" ]; then
+            VERSION="$(curl -fsSL https://dl.vericue.dev/latest | tr -d ' \t\r\n')"
+            if [ -z "$VERSION" ]; then
+              echo "::error::could not resolve https://dl.vericue.dev/latest"
+              exit 1
+            fi
+            echo "current release: $VERSION"
+            SDK_URL="https://dl.vericue.dev/v${VERSION}/vericue-${VERSION}-qt5.15-linux-x64.tar.gz"
+          fi
+          echo "SDK: $SDK_URL"
           if ! curl -fsSL -o vericue.tar.gz "$SDK_URL"; then
             echo "::error::Could not download $SDK_URL."
             echo "::error::If this is a 403, the Cloudflare WAF may be challenging"
