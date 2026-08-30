@@ -1,10 +1,15 @@
 # veriCue flows
 
-Three runnable end-to-end flows. Each one starts a Qt application, discovers
-the endpoint or port the veriCue Runtime is listening on, connects a client and
+Four runnable end-to-end flows. Each one starts a Qt application, discovers the
+endpoint or port the veriCue Runtime is listening on, connects a client and
 drives the real UI. No fixed ports, no fixed socket paths, no sleeping: every
-script reads the announcement the application prints on stdout and fails with a
-clear message if it does not arrive.
+script reads the announcement and fails with a clear message if it does not
+arrive.
+
+**Start with [04-run-and-inspect-existing-app](04-run-and-inspect-existing-app/)**:
+`vericue run ./MyApplication` on an application that has no veriCue code in it,
+and `vericue inspect ./MyApplication` to find the elements to drive. That is the
+path most customers take.
 
 These flows answer *how the Runtime is started and reached*. Once an endpoint
 exists, [`clients/`](../clients/) shows what a real test suite does with it -
@@ -13,18 +18,18 @@ JUnit XML and the veriCue HTML report.
 
 ## Which veriCue build do you need?
 
-| Flow | Transport | v0.4.0 (current) | v0.3.5 |
-|---|---|---|---|
-| [01-embedded-local-ipc](01-embedded-local-ipc/) | local IPC (UNIX socket) | yes | no |
-| [02-inject-plain-app](02-inject-plain-app/) | local IPC, via `vericue-inject` | yes | no |
-| [03-tcp-explicit](03-tcp-explicit/) | TCP | yes | yes |
+| Flow | Transport | Needs |
+|---|---|---|
+| [04-run-and-inspect-existing-app](04-run-and-inspect-existing-app/) | local IPC, via `vericue run` | Python client **0.5.0+** |
+| [01-embedded-local-ipc](01-embedded-local-ipc/) | local IPC (UNIX socket) | 0.4.0+ |
+| [02-inject-plain-app](02-inject-plain-app/) | local IPC, via `bin/vericue-inject` | 0.4.0+ |
+| [03-tcp-explicit](03-tcp-explicit/) | TCP | any |
 
-`VeriCueServer::startLocal()`, the `VERICUE_ENDPOINT=<path>` announcement and
-the local-IPC default of `vericue-inject` arrived in v0.4.0, the current package
-on <https://dl.vericue.dev>. On v0.3.5 only flow 3 runs. Flow 1 fails at build
-time in a friendly way there: the CMake configure step reports `demo_app is
-TCP-only` and `--endpoint` then tells you the same thing instead of misbehaving
-at runtime.
+The current package is whatever <https://dl.vericue.dev/latest> names.
+`vericue run` arrived in the 0.5.0 client; `VeriCueServer::startLocal()`, the
+`VERICUE_ENDPOINT=<path>` announcement and the local-IPC default of
+`vericue-inject` arrived in 0.4.0. On 0.3.5 only flow 3 runs, and flow 1 says so
+at configure time (`demo_app is TCP-only`) rather than misbehaving at runtime.
 
 ## Which transport should I use?
 
@@ -32,7 +37,8 @@ at runtime.
   (0600) with no network presence at all - nothing to firewall, nothing to scan.
 - **Anywhere else** (another host, a container, a device on the bench) **and on
   Windows**: TCP with `setAuthToken()`. Local IPC is not supported on Windows.
-- **Driving an application you do not want to rebuild**: `vericue-inject`, on
+- **Driving an application you do not want to rebuild**: `vericue run` (or
+  `bin/vericue-inject` underneath it), on
   Linux x64 with a dynamically linked Qt of the same major version as the
   package. It preloads a probe that starts the veriCue Runtime *inside* the
   target process - a supported way to acquire the Runtime on those
