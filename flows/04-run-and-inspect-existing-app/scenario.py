@@ -41,18 +41,19 @@ async def run(endpoint: str, screenshot: str, quit_app: bool) -> int:
         found = await client.find_object(path=BUTTON)
         check("plainButton class", found["className"], "QPushButton")
 
-        print("\n2. What can this element do? (the Inspector's action list, as data)")
-        # get_meta is what the Inspector builds its action list from. Asking for
-        # it here shows there is no second, tool-only discovery model.
-        meta = await client.get_meta(BUTTON)
-        # Sorted the way the Inspector sorts them: the object's own class
-        # first, so QPushButton's API is not buried under QWidget's.
-        own_signals = [s["name"] for s in sorted(
-            (s for s in meta["signals"] if not s["inherited"]),
-            key=lambda s: s.get("depth", 0))]
-        print(f"  class chain: {' -> '.join(meta['inherits'][:3])} ...")
-        print(f"  signals it declares: {', '.join(own_signals[:6])}")
-        check("clicked() is one of them", "clicked" in own_signals, True)
+        print("\n2. What state does this element expose?")
+        # Every property of the real widget, read out of the live object - the
+        # same values the Inspector shows beside the element you pick.
+        #
+        # Deliberately get_properties and not a richer introspection call: this
+        # example must run against the published client, and adding a call that
+        # only exists on master would make it a demo of something a customer
+        # cannot install.
+        props = await client.get_properties(BUTTON)
+        print(f"  {len(props)} properties, including: "
+              f"{', '.join(sorted(props)[:8])}")
+        check("the button carries its label", props.get("text"), "Do nothing")
+        check("it is enabled", props.get("enabled"), True)
 
         print("\n3. Type into the line edit, then read the property back")
         await client.type_text(INPUT, "started by vericue run")

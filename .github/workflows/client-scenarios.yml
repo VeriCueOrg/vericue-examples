@@ -108,6 +108,12 @@ jobs:
       - name: The docs do not advertise a superseded release
         run: scripts/check_release_claims.sh
 
+      # An example that needs unreleased code is not an example a customer can
+      # run. Flow 4 shipped calling get_meta(), which exists on veriCue's master
+      # and not in the published client, and failed here with AttributeError.
+      - name: The examples only call client APIs the published package has
+        run: python3 scripts/check_public_api_only.py
+
       - name: Run the CI/reporting flow
         env:
           # The runner has no display; the flow scripts fall back to

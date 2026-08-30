@@ -18,10 +18,14 @@ vericue inspect ./vericue-plain-app    # find elements, copy their paths
 veriCue code path. Nothing about it changes for this flow - `ldd` on it shows Qt
 and no veriCue at all, which the script prints before it starts.
 
-The scenario then does what a real test does: find an element by path, ask what
-that element supports, type into a field and read the property back, click and
-prove the click arrived by the widget's own `clicked()` signal, take a
+The scenario then does what a real test does: find an element by path, read the
+element's live properties, type into a field and read the property back, click
+and prove the click arrived by the widget's own `clicked()` signal, take a
 screenshot, and close the application cleanly.
+
+Everything it calls exists in the **published** client - this example is run in
+CI against the package from <https://dl.vericue.dev>, not against development
+code, so it can only demonstrate what you can actually install.
 
 `--announce` writes the endpoint to a file, so the script never parses the
 application's stdout. Your application may print whatever it likes.
