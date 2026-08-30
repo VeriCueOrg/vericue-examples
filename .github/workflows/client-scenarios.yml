@@ -32,7 +32,7 @@ on:
       sdk_url:
         description: veriCue SDK tarball (Qt 5.15, Linux x64)
         required: false
-        default: https://dl.vericue.dev/v0.4.0/vericue-0.4.0-qt5.15-linux-x64.tar.gz
+        default: ""
 
 permissions:
   contents: read
@@ -89,7 +89,30 @@ jobs:
           cmake --build build --parallel
 
       - name: Install the veriCue Python client
-        run: python3 -m pip install --upgrade "vericue==0.4.0" pytest pytest-asyncio
+        # Not pinned: this said vericue==0.4.0 while the SDK download above
+        # resolved /latest, so the job tested a current package with a client
+        # two releases behind - and `vericue run`, which flow 4 needs, does not
+        # exist in 0.4.0 at all.
+        run: python3 -m pip install --upgrade vericue pytest pytest-asyncio
+
+      # The customer's first command, on an application with no veriCue code in
+      # it. Cheap: the applications and the package are already here.
+      - name: Flow 4 - vericue run on an un-instrumented application
+        env:
+          QT_QPA_PLATFORM: offscreen
+          LD_LIBRARY_PATH: /home/runner/vericue/lib
+          PATH: /home/runner/vericue/bin:/usr/local/bin:/usr/bin:/bin
+          VERICUE_PLAIN_APP: ${{ github.workspace }}/build/plain_app/vericue-plain-app
+        run: flows/04-run-and-inspect-existing-app/run.sh
+
+      - name: The docs do not advertise a superseded release
+        run: scripts/check_release_claims.sh
+
+      # An example that needs unreleased code is not an example a customer can
+      # run. Flow 4 shipped calling get_meta(), which exists on veriCue's master
+      # and not in the published client, and failed here with AttributeError.
+      - name: The examples only call client APIs the published package has
+        run: python3 scripts/check_public_api_only.py
 
       - name: Run the CI/reporting flow
         env:

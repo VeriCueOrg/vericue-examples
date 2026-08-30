@@ -3,8 +3,21 @@
 Example Qt applications and runnable end-to-end flows for
 [veriCue](https://vericue.dev) - a test automation framework for Qt 5 and Qt 6.
 
-veriCue runs as the **veriCue Runtime** inside your Qt application. Clients
-(Python, C++, C#) connect to it over one of two transports:
+```bash
+vericue run ./MyApplication        # automate an existing application
+vericue inspect ./MyApplication    # find elements and copy their paths
+```
+
+On supported dynamically linked Qt applications that needs **no source change
+and no rebuild** - start with
+[flows/04-run-and-inspect-existing-app](flows/04-run-and-inspect-existing-app/).
+Where injection is unsuitable or unsupported (macOS, statically linked Qt), the
+Runtime is **embedded** in your own build instead; same server, same protocol,
+same commands.
+
+veriCue code runs as the **veriCue Runtime** inside your Qt application, however
+it got there. Clients (Python, C++, C#) connect to it over one of two
+transports:
 
 - **local IPC** - a user-private UNIX socket, no network presence. Supported on
   **Linux and macOS**. The right choice when the tests run on the same machine
@@ -16,22 +29,21 @@ veriCue runs as the **veriCue Runtime** inside your Qt application. Clients
 Both speak the identical protocol and enforce the identical authentication and
 licensing rules, so a scenario is written once and runs over either.
 
-## Version requirement - read this first
+## Which release each flow needs
 
-All three flows run against **v0.4.0**, the current package on
-<https://dl.vericue.dev>.
+The current package is whatever <https://dl.vericue.dev/latest> names - the same
+marker `install.sh` reads. Install it with `curl -fsSL https://dl.vericue.dev/install.sh | sh`
+and the Python client with `pip install -U vericue`.
 
-| Flow | Transport | v0.4.0 | v0.3.5 |
-|---|---|---|---|
-| [flows/01-embedded-local-ipc](flows/01-embedded-local-ipc/) | local IPC | yes | no |
-| [flows/02-inject-plain-app](flows/02-inject-plain-app/) | local IPC via `vericue-inject` | yes | no |
-| [flows/03-tcp-explicit](flows/03-tcp-explicit/) | TCP | yes | yes |
+| Flow | Transport | Needs |
+|---|---|---|
+| [flows/04-run-and-inspect-existing-app](flows/04-run-and-inspect-existing-app/) | local IPC via `vericue run` | client **0.5.0+** (that is where `vericue run` arrived) |
+| [flows/01-embedded-local-ipc](flows/01-embedded-local-ipc/) | local IPC | 0.4.0+ |
+| [flows/02-inject-plain-app](flows/02-inject-plain-app/) | local IPC via `bin/vericue-inject` | 0.4.0+ |
+| [flows/03-tcp-explicit](flows/03-tcp-explicit/) | TCP | any |
 
-`VeriCueServer::startLocal()`, the `VERICUE_ENDPOINT=<path>` announcement and
-the local-IPC default of `vericue-inject` arrived in v0.4.0. If you are still on
-v0.3.5, run flow 3 and upgrade for the other two. Nothing breaks quietly:
-building against v0.3.5 configures `demo_app` as TCP-only and says so, and
-`--endpoint` then tells you which build you need.
+Nothing breaks quietly: each flow checks what it needs and says which version
+adds it. On 0.3.5, flow 3 is the one that runs.
 
 ## Flows
 
